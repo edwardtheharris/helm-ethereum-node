@@ -2,7 +2,7 @@
 # ```{rubric} Default Values
 # ```
 # ---
-# Default values for the Helm template-replace- template.
+# Default values for the Helm ethereum template.
 #
 # This is a YAML-formatted file.
 #
@@ -46,10 +46,10 @@ autoscaling:
   minReplicas: 0
 
 ###
-# ```{rubric} template-replace- Config
+# ```{rubric} ethereum Config
 # ```
 # ---
-# Configure the template-replace- deployment.
+# Configure the ethereum deployment.
 #
 # ```{literalinclude} /values.yaml
 # :caption: config
@@ -62,13 +62,13 @@ config:
   caches_backend: django_redis.cache.RedisCache
   celery:
     img:
-      repository: ghcr.io/edwardtheharris/helm-template-replace-/celery
+      repository: ghcr.io/edwardtheharris/helm-ethereum-node/celery
       tag: '0.0.1.rc29'
     broker: 'redis://redis.redis.svc.cluster.local:6379/0'
     name: celery-config
     results: 'redis://redis.redis.svc.cluster.local:6379/0'
     root: '/opt/celery'
-  name: template-replace--config
+  name: ethereum-config
 
 ###
 # ```{rubric} Database
@@ -84,7 +84,7 @@ config:
 # :end-before: "###\n"
 # ```
 database:
-  database: template-replace-
+  database: ethereum
   engine: django.db.backends.postgresql
   host: postgresql.postgresql.svc.cluster.local
   name: postgres
@@ -103,10 +103,10 @@ database:
 # ```{literalinclude} /values.yaml
 # :caption: fullname override
 # :language: yaml
-# :start-at: "fullnameOverride: \"template-replace-\"\n"
+# :start-at: "fullnameOverride: \"ethereum\"\n"
 # :end-before: "###\n"
 # ```
-fullnameOverride: "template-replace-"
+fullnameOverride: "ethereum"
 
 ###
 # ```{rubric} Container image settings
@@ -122,7 +122,7 @@ fullnameOverride: "template-replace-"
 # ```
 image:
   pullPolicy: Always
-  repository: ghcr.io/edwardtheharris/helm-template-replace-/template-replace-
+  repository: ghcr.io/edwardtheharris/helm-ethereum-node/ethereum
   # Overrides the image tag whose default is the chart appVersion.
   tag: '0.0.1.rc29'
   secret:
@@ -171,7 +171,7 @@ ingress:
   className: "nginx"
   enabled: true
   hosts:
-  - host: template-replace-.svc.cluster.local
+  - host: ethereum.svc.cluster.local
     paths:
     - path: /
       pathType: ImplementationSpecific
@@ -192,7 +192,7 @@ ingress:
 livenessProbe:
   exec:
     command:
-    - /opt/template-replace-/bin/template-replace--server
+    - /opt/ethereum/bin/ethereum-server
     - status
   # When to give up and restart the container
   failureThreshold: 3
@@ -215,10 +215,10 @@ livenessProbe:
 # ```{literalinclude} /values.yaml
 # :caption: name override
 # :language: yaml
-# :start-at: "nameOverride: \"template-replace-\"\n"
+# :start-at: "nameOverride: \"ethereum\"\n"
 # :end-before: "###\n"
 # ```
-nameOverride: "template-replace-"
+nameOverride: "ethereum"
 
 ###
 # ```{rubric} Node Selector
@@ -250,7 +250,7 @@ nodeSelector:
 persistence:
   claim:
     enabled: false
-  name: template-replace-
+  name: ethereum
   size: 50Gi
   storageClass: csi-driver-lvm-linear
 
@@ -281,7 +281,7 @@ podAnnotations: {}
 # :end-before: "###\n"
 # ```
 podLabels:
-  app: template-replace-
+  app: ethereum
 
 ###
 # ```{rubric} Pod Security Context
@@ -406,7 +406,7 @@ service:
   type: ClusterIP
   selectorLabels:
     app.kubernetes.io/component: network
-    app.kubernetes.io/name: template-replace-
+    app.kubernetes.io/name: ethereum
 
 ###
 # ```{rubric} Service Account
@@ -423,14 +423,14 @@ service:
 serviceAccount:
   # Annotations to add to the service account
   annotations:
-    sa.kubernetes.io/name: template-replace-
+    sa.kubernetes.io/name: ethereum
   # Automatically mount a ServiceAccount's API credentials?
   automount: true
   # Specifies whether a service account should be created
   create: true
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: "template-replace-"
+  name: "ethereum"
 
 ###
 # ```{rubric} Super User Config
@@ -446,7 +446,7 @@ serviceAccount:
 # ```
 superUser:
   create: true
-  email: template-replace-@template-replace-.svc.cluster.local
+  email: ethereum@ethereum.svc.cluster.local
   name: nb-admin
   password: ""
   secret:
