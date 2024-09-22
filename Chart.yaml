@@ -25,10 +25,10 @@ apiVersion: v2
 #
 # ```{literalinclude} /Chart.yaml
 # :language: yaml
-# :start-at: "appVersion: \"0.0.1\"\n"
+# :start-at: "appVersion: \"1.14.9-stable-c350d3ac\"\n"
 # :end-before: "###\n"
 # ```
-appVersion: "0.0.1"
+appVersion: "1.14.9-stable-c350d3ac"
 
 ###
 # ```{rubric} Description

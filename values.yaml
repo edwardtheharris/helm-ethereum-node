@@ -1,100 +1,4 @@
 ###
-# ```{rubric} Default Values
-# ```
-# ---
-# Default values for the Helm ethereum template.
-#
-# This is a YAML-formatted file.
-#
-# Declare variables to be passed into your templates.
-#
-# ```{literalinclude} /values.yaml
-# :caption: affinity
-# :language: yaml
-# :start-at: "affinity:\n"
-# :end-before: "###\n"
-# ```
-affinity:
-  nodeAffinity:
-  requiredDuringSchedulingIgnoredDuringExecution:
-    nodeSelectorTerms:
-    - matchExpressions:
-      - key: kubernetes.io/os
-        operator: In
-        values:
-        - linux
-
-###
-# ```{rubric} Autoscaling
-# ```
-# ---
-# Configure auto scaling on the cluster.
-#
-# ```{literalinclude} /values.yaml
-# :caption: affinity
-# :language: yaml
-# :start-at: "autoscaling:\n"
-# :end-before: "###\n"
-# ```
-#
-# `targetCPUUtilizationPercentage: 80`{l=yaml}
-#
-# `targetMemoryUtilizationPercentage: 80`{l=yaml}
-autoscaling:
-  enabled: false
-  maxReplicas: 0
-  minReplicas: 0
-
-###
-# ```{rubric} ethereum Config
-# ```
-# ---
-# Configure the ethereum deployment.
-#
-# ```{literalinclude} /values.yaml
-# :caption: config
-# :language: yaml
-# :start-at: "config:\n"
-# :end-before: "###\n"
-# ```
-config:
-  allowed_hosts: "*"
-  caches_backend: django_redis.cache.RedisCache
-  celery:
-    img:
-      repository: ghcr.io/edwardtheharris/helm-ethereum-node/celery
-      tag: '0.0.1.rc29'
-    broker: 'redis://redis.redis.svc.cluster.local:6379/0'
-    name: celery-config
-    results: 'redis://redis.redis.svc.cluster.local:6379/0'
-    root: '/opt/celery'
-  name: ethereum-config
-
-###
-# ```{rubric} Database
-# ```
-# ---
-# Configure a relational database connection, MySQL and PostgreSQL are
-# supported.
-#
-# ```{literalinclude} /values.yaml
-# :caption: database
-# :language: yaml
-# :start-at: "database:\n"
-# :end-before: "###\n"
-# ```
-database:
-  database: ethereum
-  engine: django.db.backends.postgresql
-  host: postgresql.postgresql.svc.cluster.local
-  name: postgres
-  password: ""
-  port: '5432'
-  secretfile: secrets/secrets.yaml
-  timeout: '300'
-  username: ""
-
-###
 # ```{rubric} Full Name Override
 # ```
 # ---
@@ -106,6 +10,11 @@ database:
 # :start-at: "fullnameOverride: \"ethereum\"\n"
 # :end-before: "###\n"
 # ```
+ethereum:
+  password:
+    enabled: false
+    keystore: ''
+    value: ''
 fullnameOverride: "ethereum"
 
 ###
@@ -113,6 +22,12 @@ fullnameOverride: "ethereum"
 # ```
 # ---
 # Define the image, tag and repository to be deployed.
+#
+# The `tag`{l=yaml} attribute overrides the image tag whose default is
+# the chart `appVersion`{l=yaml}.
+#
+# In this repository, the image tag should match the latest released version
+# of the Chart.
 #
 # ```{literalinclude} /values.yaml
 # :caption: image
@@ -122,27 +37,8 @@ fullnameOverride: "ethereum"
 # ```
 image:
   pullPolicy: Always
-  repository: ghcr.io/edwardtheharris/helm-ethereum-node/ethereum
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: '0.0.1.rc29'
-  secret:
-    name: ghcr
-    data: ''
-
-###
-# ```{rubric} Image Pull Secrets
-# ```
-# ---
-# Secrets required to pull the deployment image.
-#
-# ```{literalinclude} /values.yaml
-# :caption: imagePullSecrets
-# :language: yaml
-# :start-at: "imagePullSecrets:\n"
-# :end-before: "###\n"
-# ```
-imagePullSecrets:
-- name: ghcr
+  repository: edwardtheharris/ethereum-node
+  tag: '0.0.1'
 
 ###
 # ```{rubric} Ingress
@@ -165,46 +61,37 @@ imagePullSecrets:
 #      - chart-example.local
 # ```
 ingress:
-  annotations:
-    kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-  className: "nginx"
+  annotations: {}
+  className: nginx
   enabled: true
+  externalIPs: []
   hosts:
-  - host: ethereum.svc.cluster.local
+  - host: ethereum.breeze-blocks.net
     paths:
+    - path: /auth
+      pathType: Prefix
+      port: 8551
+      serviceName: ethereum
     - path: /
-      pathType: ImplementationSpecific
+      pathType: Prefix
+      port: 8545
+      serviceName: ethereum
+    - path: /node
+      pathType: Prefix
+      port: 30303
+      serviceName: ethereum
+    - path: /wshost
+      pathType: Prefix
+      port: 8546
+      serviceName: ethereum
+  loadBalancerIP: ''
+  secret:
+    enabled: false
+    crt: ''
+    key: ''
   tls: []
-
-###
-# ```{rubric} Liveness Probe
-# ```
-# ---
-# Set a command to test for liveness.
-#
-# ```{literalinclude} /values.yaml
-# :caption: liveness probe
-# :language: yaml
-# :start-at: "livenessProbe:\n"
-# :end-before: "###\n"
-# ```
-livenessProbe:
-  exec:
-    command:
-    - /opt/ethereum/bin/ethereum-server
-    - status
-  # When to give up and restart the container
-  failureThreshold: 3
-  # Delay before the first probe is initiated
-  initialDelaySeconds: 30
-  # How often to perform the probe
-  periodSeconds: 10
-  # Minimum consecutive successes for the probe to
-  # be considered successful after having failed
-  successThreshold: 1
-  # When the probe times out
-  timeoutSeconds: 5
+labels:
+  node: k8s07.breeze-blocks.net
 
 ###
 # ```{rubric} Name Override
@@ -224,7 +111,7 @@ nameOverride: "ethereum"
 # ```{rubric} Node Selector
 # ```
 # ---
-# Select nodes for workloads to run on.
+# Select node(s) for workloads to run on.
 #
 # ```{literalinclude} /values.yaml
 # :caption: affinity
@@ -233,7 +120,7 @@ nameOverride: "ethereum"
 # :end-before: "###\n"
 # ```
 nodeSelector:
-  kubernetes.io/os: linux
+  kubernetes.io/node: k8s07.breeze-blocks.net
 
 ###
 # ```{rubric} Persistence Configuration
@@ -249,60 +136,9 @@ nodeSelector:
 # ```
 persistence:
   claim:
-    enabled: false
+    enabled: true
   name: ethereum
-  size: 50Gi
-  storageClass: csi-driver-lvm-linear
-
-###
-# ```{rubric} Pod Annotations
-# ```
-# ---
-# Apply these annotations to all pods.
-#
-# ```{literalinclude} /values.yaml
-# :caption: pod annotations
-# :language: yaml
-# :start-at: "podAnnotations: {}\n"
-# :end-before: "###\n"
-# ```
-podAnnotations: {}
-
-###
-# ```{rubric} Pod Labels
-# ```
-# ---
-# Apply these labels to all pods.
-#
-# ```{literalinclude} /values.yaml
-# :caption: pod labels
-# :language: yaml
-# :start-at: "podLabels:\n"
-# :end-before: "###\n"
-# ```
-podLabels:
-  app: ethereum
-
-###
-# ```{rubric} Pod Security Context
-# ```
-# ---
-# Define security context for pods.
-#
-# ```{literalinclude} /values.yaml
-# :caption: pod security context
-# :language: yaml
-# :start-at: "podSecurityContext: {}\n"
-# :end-before: "###\n"
-# ```
-#
-# ```{code-block} yaml
-# :caption: pod security context EXAMPLE
-#
-# podSecurityContext:
-#  fsGroup: 1000
-# ```
-podSecurityContext: {}
+  storageClass: csi-lvm-linear
 
 ###
 # ```{rubric} Replica Count
@@ -316,17 +152,6 @@ podSecurityContext: {}
 # :start-at: "replicaCount: 1\n"
 # :end-before: "###\n"
 # ```
-# readinessProbe:
-#   exec:
-#     command:
-#     - pg_isready
-#     - -U
-#     - postgres
-#   failureThreshold: 3 # When to give up, marking the Pod as Unready
-#   initialDelaySeconds: 5 # Delay before the first probe is initiated, can be shorter than liveness probe
-#   periodSeconds: 5 # How often to perform the probe
-#   successThreshold: 1 # Minimum consecutive successes for the probe to be considered successful
-#   timeoutSeconds: 1 # When the probe times out
 replicaCount: 1
 
 ###
@@ -362,20 +187,11 @@ resources:
   limits:
     cpu: 2
     memory: 4096Mi
-
-###
-# ```{rubric} Security Context
-# ```
-# ---
-# Set a security context on the workloads.
-#
-# ```{literalinclude} /values.yaml
-# :caption: securityContext
-# :language: yaml
-# :start-at: "securityContext: {}\n"
-# :end-before: "###\n"
-# ```
-securityContext: {}
+    storage: 900Gi
+  requests:
+    cpu: 1
+    memory: 2048Mi
+    storage: 700Gi
 
 ###
 # ```{rubric} Service
@@ -401,12 +217,35 @@ securityContext: {}
 # ```
 service:
   enabled: true
-  port: 8000
-  targetPort: 8000
-  type: ClusterIP
-  selectorLabels:
-    app.kubernetes.io/component: network
-    app.kubernetes.io/name: ethereum
+  auth:
+    name: auth
+    port: 8551
+    protocol: TCP
+    targetPort: 8551
+  externalIPs: []
+  http:
+    name: http
+    port: 8545
+    protocol: HTTP
+    targetPort: 8545
+  loadBalancerIP: ''
+  node:
+    name: node
+    port: 30303
+    protocol: TCP
+    targetPort: 30303
+  rpc:
+    enabled: true
+    name: rpc
+    port: 8334
+    protocol: TCP
+    targetPort: 8334
+  type: LoadBalancer
+  wshost:
+    name: wshost
+    port: 8546
+    protocol: TCP
+    targetPort: 8546
 
 ###
 # ```{rubric} Service Account
@@ -423,51 +262,17 @@ service:
 serviceAccount:
   # Annotations to add to the service account
   annotations:
-    sa.kubernetes.io/name: ethereum
+    app.kubernetes.io/name: ethereum
+    app.kubernetes.io/instance: ethereum
   # Automatically mount a ServiceAccount's API credentials?
   automount: true
   # Specifies whether a service account should be created
   create: true
   # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
+  # If not set and create is true, a name is generated using the fullname ethereum-node
   name: "ethereum"
-
-###
-# ```{rubric} Super User Config
-# ```
-# ---
-# When enabled, will create a super user account during deployment.
-#
-# ```{literalinclude} /values.yaml
-# :caption: superUser
-# :language: yaml
-# :start-at: "superUser:\n"
-# :end-before: "###\n"
-# ```
-superUser:
-  create: true
-  email: ethereum@ethereum.svc.cluster.local
-  name: nb-admin
-  password: ""
-  secret:
-    name: secret.superuser
-  secretKey: '57evlrs^0pmu5#ys=9t6==lf6hdz&amp;$1)qq-(%f1noo_b+nsy@f'
-  token: ""
-  username: ""
-
-###
-# ```{rubric} Tolerations
-# ```
-# ---
-# Define taints that will be tolerated to run workloads on nodes.
-#
-# ```{literalinclude} /values.yaml
-# :caption: tolerations
-# :language: yaml
-# :start-at: "tolerations: []\n"
-# :end-before: "###\n"
-# ```
-tolerations: []
+statefulset:
+  replicas: 1
 
 ###
 # ```{rubric} Type
@@ -478,52 +283,7 @@ tolerations: []
 # ```{literalinclude} /values.yaml
 # :caption: type
 # :language: yaml
-# :start-at: "type: Deployment\n"
+# :start-at: "type: StatefulSet\n"
 # :end-before: "###\n"
 # ```
-type: Deployment
-
-###
-# ```{rubric} Volume Mounts
-# ```
-# ---
-# Additional volumeMounts on the output Deployment definition.
-#
-# ```{literalinclude} /values.yaml
-# :caption: volume mounts
-# :language: yaml
-# :start-at: "volumeMounts: []\n"
-# :end-before: "###\n"
-# ```
-#
-# ```{code-block} yaml
-# :caption: volumeMounts example
-# - mountPath: "/mnt/k8s/psql"
-#   name: data
-#   readOnly: false
-# - name: foo
-#   mountPath: "/etc/foo"
-#   readOnly: true
-# ```
-volumeMounts: []
-
-###
-# ```{rubric} Volumes
-# ```
-# ---
-# Additional volumes on the output Deployment definition.
-#
-# ```{literalinclude} /values.yaml
-# :caption: volumes
-# :language: yaml
-# :start-at: "volumes: []\n"
-# ```
-#
-# ```{code-block} yaml
-# :caption: volume example
-# - name: foo
-#   secret:
-#     secretName: mysecret
-#     optional: false
-# ```
-volumes: []
+type: StatefulSet
