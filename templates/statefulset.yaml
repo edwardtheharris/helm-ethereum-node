@@ -5,32 +5,50 @@ metadata:
 spec:
   selector:
     matchLabels:
-      ss.kubernetes.io/name: {{ .Values.nameOverride }}
-      ss.kubernetes.io/instance: {{ .Release.Name }}
+      {{ include "ethereum.selectorLabels" . | nindent 6 }}
   serviceName: {{ .Values.nameOverride }}
   replicas: {{ .Values.replicaCount }}
   template:
     metadata:
       labels:
-        ss.kubernetes.io/name: {{ .Values.nameOverride }}
-        ss.kubernetes.io/instance: {{ .Release.Name }}
+        {{ include "ethereum.labels" . | nindent 8 }}
     spec:
       containers:
-        - name: nginx
+        - name: ethereum
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: 80
-              name: http
+            - containerPort: {{ .Values.service.auth.port }}
+              name: {{ .Values.service.auth.name }}
+            - containerPort: {{ .Values.service.http.port }}
+              name: {{ .Values.service.http.name }}
+            - containerPort: {{ .Values.service.node.port }}
+              name: {{ .Values.service.node.name }}
+            - containerPort: {{ .Values.service.rpc.port }}
+              name: {{ .Values.service.rpc.name }}
+            - containerPort: {{ .Values.service.wshost.port }}
+              name: {{ .Values.service.wshost.name }}
           volumeMounts:
-            - name: nginx
-              mountPath: /etc/nginx
+            - name: {{ .Values.persistence.name }}
+              mountPath: /srv/ethereum
+            - name: keystore
+              mountPath: /root/.ethereum/keystore/
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      volumes:
+        - name: keystore
+          secret:
+            secretName: ethereum-password
   volumeClaimTemplates:
   - metadata:
-      name: nginx
+      name: {{ .Values.persistence.name }}
     spec:
-      accessModes: [ "ReadWriteOnce" ]
+      accessModes: [ "ReadWriteMany", "ReadWriteOnce" ]
       resources:
+        limits:
+          storage: {{ .Values.resources.limits.storage }}
         requests:
-          storage: {{ .Values.persistence.size }}
-      storageClassName: csi-driver-lvm-linear
+          storage: {{ .Values.resources.requests.storage }}
+      storageClassName: {{ .Values.persistence.storageClass }}
+      volumeMode: Filesystem

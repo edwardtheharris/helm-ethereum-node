@@ -34,6 +34,8 @@ Create chart name and version as used by the chart label.
 Common labels
 */}}
 {{- define "ethereum.labels" -}}
+app.kubernetes.io/name: {{ .Chart.Name }}
+app.kubernetes.io/instance: {{ .Release.Name }}
 helm.sh/chart: {{ include "ethereum.chart" . }}
 {{ include "ethereum.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
@@ -46,8 +48,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 Selector labels
 */}}
 {{- define "ethereum.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "ethereum.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
+kubernetes.io/hostname: k8s07.breeze-blocks.net
 {{- end }}
 
 {{/*
