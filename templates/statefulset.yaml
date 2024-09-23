@@ -14,8 +14,8 @@ spec:
         {{ include "ethereum.labels" . | nindent 8 }}
     spec:
       containers:
-        - name: ethereum
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        - name: ethereum-execution
+          image: "{{ .Values.image.execution.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.service.auth.port }}
@@ -24,8 +24,6 @@ spec:
               name: {{ .Values.service.http.name }}
             - containerPort: {{ .Values.service.node.port }}
               name: {{ .Values.service.node.name }}
-            - containerPort: {{ .Values.service.rpc.port }}
-              name: {{ .Values.service.rpc.name }}
             - containerPort: {{ .Values.service.wshost.port }}
               name: {{ .Values.service.wshost.name }}
           volumeMounts:
@@ -33,6 +31,12 @@ spec:
               mountPath: /srv/ethereum
             - name: keystore
               mountPath: /root/.ethereum/keystore/
+        - name: ethereum-consensus
+          env:
+            - name: EXECUTION_ENDPOINT
+              value: 'ethereum-execution:8551'
+          image: "{{ .Values.image.consensus.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
       {{- if .Values.serviceAccount.create }}
       serviceAccountName: {{ .Values.serviceAccount.name }}
       {{- end }}

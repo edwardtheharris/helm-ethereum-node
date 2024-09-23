@@ -36,8 +36,11 @@ fullnameOverride: "ethereum"
 # :end-before: "###\n"
 # ```
 image:
+  consensus:
+    repository: edwardtheharris/ethereum-consensus-node
+  execution:
+    repository: edwardtheharris/ethereum-execution-node
   pullPolicy: Always
-  repository: edwardtheharris/ethereum-node
   tag: '0.0.1'
 
 ###
