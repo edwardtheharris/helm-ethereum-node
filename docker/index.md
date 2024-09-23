@@ -12,18 +12,48 @@ your version of {term}`Docker` includes the `buildx` plugin.
 
 ## Build Container Image
 
+Ethereum requires two types of nodes to run, so there will be two images
+to be built.
+
+### Execution Node Image Build
+
 ```{code-block} shell
 :caption: container image build
 
-GHCR_REPO=ghcr.io/username/helm-bitcoin-node/node
-DOCKER_REPO=username/bitcoin-node
-VERSION="0.0.2-$(git rev-parse --short=6 HEAD)"
+GHCR_EXECUTION_REPO=ghcr.io/username/helm-ethereum-node/execution
+DOCKER_EXECUTION_REPO=username/ethereum-execution-node
+VERSION="0.0.1"
 
 source secrets/monero.sh
 
 docker build \
-  --build-arg VERSION="${VERSION}" -t "${GHCR_REPO}:${VERSION}" \
-  -t "${DOCKER_REPO}:${VERSION}" --push -f docker/Dockerfile .
+  --build-arg VERSION="${VERSION}" -t "${GHCR_EXECUTION_REPO}:${VERSION}" \
+  -t "${DOCKER_EXECUTION_REPO}:${VERSION}" --push -f docker/Dockerfile \
+  --target execution .
+```
+
+### Consensus Node Image Build
+
+```{note}
+This image requires that several systemd services be running and that means
+we'll need to provide this container with some additional privileges.
+[This ServerFault answer](https://serverfault.com/a/653997/1078068) provides
+some context.
+```
+
+```{code-block} shell
+:caption: consensus node image build
+
+GHCR_CONSENSUS_REPO=ghcr.io/username/helm-ethereum-node/consensus
+DOCKER_CONSENSUS_REPO=username/ethereum-consensus-node
+VERSION="0.0.1"
+
+source secrets/monero.sh
+
+docker build \
+  --build-arg VERSION="${VERSION}" -t "${GHCR_CONSENSUS_REPO}:${VERSION}" \
+  -t "${DOCKER_CONSENSUS_REPO}:${VERSION}" --push -f docker/Dockerfile \
+  --target consensus .
 ```
 
 ### Dockerfile Contents
