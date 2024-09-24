@@ -24,8 +24,6 @@ GHCR_EXECUTION_REPO=ghcr.io/username/helm-ethereum-node/execution
 DOCKER_EXECUTION_REPO=username/ethereum-execution-node
 VERSION="0.0.1"
 
-source secrets/monero.sh
-
 docker build \
   --build-arg VERSION="${VERSION}" -t "${GHCR_EXECUTION_REPO}:${VERSION}" \
   -t "${DOCKER_EXECUTION_REPO}:${VERSION}" --push -f docker/Dockerfile \
@@ -47,8 +45,6 @@ some context.
 GHCR_CONSENSUS_REPO=ghcr.io/username/helm-ethereum-node/consensus
 DOCKER_CONSENSUS_REPO=username/ethereum-consensus-node
 VERSION="0.0.1"
-
-source secrets/monero.sh
 
 docker build \
   --build-arg VERSION="${VERSION}" -t "${GHCR_CONSENSUS_REPO}:${VERSION}" \

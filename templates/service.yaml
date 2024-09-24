@@ -26,5 +26,5 @@ spec:
       protocol: TCP
       name: {{ .Values.service.wshost.name }}
   selector:
-    {{- include "ethereum.labels" . | nindent 4 }}
+    {{- include "ethereum.selectorLabels" . | nindent 4 }}
   type: {{ .Values.service.type }}
