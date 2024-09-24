@@ -1,49 +1,54 @@
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{ .Values.nameOverride }}
+  labels:
+    {{- include "ethereum.labels" . | nindent 4 }}
 spec:
-  selector:
-    matchLabels:
-      {{ include "ethereum.selectorLabels" . | nindent 6 }}
   serviceName: {{ .Values.nameOverride }}
   replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "ethereum.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{ include "ethereum.labels" . | nindent 8 }}
+        {{- include "ethereum.selectorLabels" . | nindent 8 }}
     spec:
       containers:
-        - name: ethereum-execution
-          image: "{{ .Values.image.execution.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - containerPort: {{ .Values.service.auth.port }}
-              name: {{ .Values.service.auth.name }}
-            - containerPort: {{ .Values.service.http.port }}
-              name: {{ .Values.service.http.name }}
-            - containerPort: {{ .Values.service.node.port }}
-              name: {{ .Values.service.node.name }}
-            - containerPort: {{ .Values.service.wshost.port }}
-              name: {{ .Values.service.wshost.name }}
-          volumeMounts:
-            - name: {{ .Values.persistence.name }}
-              mountPath: /srv/ethereum
-            - name: keystore
-              mountPath: /root/.ethereum/keystore/
-        - name: ethereum-consensus
-          env:
-            - name: EXECUTION_ENDPOINT
-              value: 'ethereum-execution:8551'
-          image: "{{ .Values.image.consensus.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-      {{- if .Values.serviceAccount.create }}
-      serviceAccountName: {{ .Values.serviceAccount.name }}
-      {{- end }}
+      - name: clef
+        command:
+          - clef
+        args: ["--keystore=/srv/ethereum/clef/keystore/", "--configdir=/srv/ethereum/clef/config", "--chainid=1", "--http", "--suppress-bootwarn"]
+        image: {{ .Values.image.execution.repository }}:{{ .Values.image.tag }}
+        volumeMounts:
+        - name: {{ .Values.persistence.name }}
+          mountPath: /srv/ethereum
+      - name: geth
+        image: {{ .Values.image.execution.repository }}:{{ .Values.image.tag }}
+        ports:
+        - containerPort: 8545
+        - containerPort: 8551
+        volumeMounts:
+        - name: {{ .Values.persistence.name }}
+          mountPath: /srv/ethereum
+      - name: prysm
+        # command:
+        #   - '/usr/bin/prism-beacon-chain'
+        # args:
+        #   ["--accept-terms-of-use", "--datadir=/srv/ethereum/consensus", "--execution-endpoint=http://localhost:8551", "--mainnet", "--checkpoint-sync-url=https://beaconstate.info", "--genesis-beacon-api-url=https://beaconstate.info"]
+        image: {{ .Values.image.consensus.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 4000
+        volumeMounts:
+        - name: {{ .Values.persistence.name }}
+          mountPath: /srv/ethereum
       volumes:
-        - name: keystore
-          secret:
-            secretName: ethereum-password
+      - name: {{ .Values.persistence.name }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistence.name }}
   volumeClaimTemplates:
   - metadata:
       name: {{ .Values.persistence.name }}

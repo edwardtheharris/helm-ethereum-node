@@ -8,3 +8,4 @@ _build
 reflog
 secrets/
 test.yaml
+audit.log

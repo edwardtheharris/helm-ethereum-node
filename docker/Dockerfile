@@ -6,7 +6,7 @@ LABEL org.opencontainers.image.description="An Ethereum Execution Node running g
 LABEL org.opencontainers.image.name="ethereum-execution"
 LABEL org.opencontainers.image.version=${VERSION}
 RUN pacman -Syyu go-ethereum --noconfirm && mkdir -pv /srv/ethereum \
-    && mkdir -pv /etc/ethereum && mkdir -pv /root/.ethereum/keystore
+    && mkdir -pv /etc/ethereum
 COPY docker/entrypoint.sh /bin/entrypoint.sh
 COPY docker/ethereum.conf /etc/ethereum/ethereum.conf
 RUN chmod +x /bin/entrypoint.sh
@@ -14,6 +14,8 @@ EXPOSE 8545
 EXPOSE 8551
 EXPOSE 8546
 EXPOSE 30303
+VOLUME /srv/ethereum
+WORKDIR /srv/ethereum
 CMD ["/bin/entrypoint.sh"]
 
 FROM archlinux:base-devel AS consensus
