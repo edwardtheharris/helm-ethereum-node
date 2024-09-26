@@ -15,25 +15,34 @@ spec:
     metadata:
       labels:
         {{- include "ethereum.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: primary
     spec:
       containers:
       - name: clef
-        command:
-          - clef
-        args: ["--keystore=/srv/ethereum/clef/keystore/", "--configdir=/srv/ethereum/clef/config", "--chainid=1", "--http", "--suppress-bootwarn"]
-        image: {{ .Values.image.execution.repository }}:{{ .Values.image.tag }}
+        image: {{ .Values.image.clef.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: Always
         volumeMounts:
         - name: {{ .Values.persistence.name }}
           mountPath: /srv/ethereum
+        - name: jwt
+          mountPath: /srv/ethereum/jwt
       - name: geth
         image: {{ .Values.image.execution.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: Always
         ports:
         - containerPort: 8545
         - containerPort: 8551
         volumeMounts:
         - name: {{ .Values.persistence.name }}
           mountPath: /srv/ethereum
+        - name: jwt
+          mountPath: /srv/ethereum/jwt
       - name: prysm
+        env:
+          - name: USE_PRYSM_VERSION
+            value: v5.0.0
+          - name: GNUPGHOME
+            value: /srv/ethereum/consensus/.gnupg
         # command:
         #   - '/usr/bin/prism-beacon-chain'
         # args:
@@ -45,10 +54,15 @@ spec:
         volumeMounts:
         - name: {{ .Values.persistence.name }}
           mountPath: /srv/ethereum
+        - name: jwt
+          mountPath: /srv/ethereum/jwt
       volumes:
       - name: {{ .Values.persistence.name }}
         persistentVolumeClaim:
           claimName: {{ .Values.persistence.name }}
+      - name: jwt
+        secret:
+          secretName: ethereum
   volumeClaimTemplates:
   - metadata:
       name: {{ .Values.persistence.name }}

@@ -36,6 +36,8 @@ fullnameOverride: "ethereum"
 # :end-before: "###\n"
 # ```
 image:
+  clef:
+    repository: edwardtheharris/ethereum-clef
   consensus:
     repository: edwardtheharris/ethereum-consensus-node
   execution:
@@ -87,6 +89,18 @@ ingress:
       pathType: Prefix
       port: 8546
       serviceName: ethereum
+  - host: prysm.breeze-blocks.net
+    paths:
+    - path: /
+      pathType: Prefix
+      port: 4000
+      serviceName: prysm
+  - host: clef.breeze-blocks.net
+    paths:
+    - path: /
+      pathType: Prefix
+      port: 8550
+      serviceName: clef
   loadBalancerIP: ''
   secret:
     enabled: false
@@ -194,7 +208,7 @@ resources:
   requests:
     cpu: 1
     memory: 2048Mi
-    storage: 700Gi
+    storage: 500Gi
 
 ###
 # ```{rubric} Service
