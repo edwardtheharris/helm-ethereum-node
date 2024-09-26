@@ -15,19 +15,34 @@ your version of {term}`Docker` includes the `buildx` plugin.
 Ethereum requires two types of nodes to run, so there will be two images
 to be built.
 
-### Execution Node Image Build
+### Clef Node Image Build
 
 ```{code-block} shell
 :caption: container image build
 
-GHCR_EXECUTION_REPO=ghcr.io/username/helm-ethereum-node/execution
-DOCKER_EXECUTION_REPO=username/ethereum-execution-node
+GHCR_CLEF_REPO=ghcr.io/username/helm-ethereum-node/clef
+DOCKER_CLEF_REPO=username/ethereum-clef
 VERSION="0.0.1"
 
 docker build \
-  --build-arg VERSION="${VERSION}" -t "${GHCR_EXECUTION_REPO}:${VERSION}" \
-  -t "${DOCKER_EXECUTION_REPO}:${VERSION}" --push -f docker/Dockerfile \
-  --target execution .
+  --build-arg VERSION="${VERSION}" -t "${GHCR_CLEF_REPO}:${VERSION}" \
+  -t "${DOCKER_CLEF_REPO}:${VERSION}" --push -f docker/Dockerfile \
+  --target clef .
+```
+
+### Executor Node Image Build
+
+```{code-block} shell
+:caption: container image build
+
+GHCR_EXECUTOR_REPO=ghcr.io/username/helm-ethereum-node/executor
+DOCKER_EXECUTOR_REPO=username/ethereum-executor-node
+VERSION="0.0.1"
+
+docker build \
+  --build-arg VERSION="${VERSION}" -t "${GHCR_EXECUTOR_REPO}:${VERSION}" \
+  -t "${DOCKER_EXECUTOR_REPO}:${VERSION}" --push -f docker/Dockerfile \
+  --target executor .
 ```
 
 ### Consensus Node Image Build
